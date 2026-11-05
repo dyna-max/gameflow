@@ -1,0 +1,23 @@
+Live previews show visuals a game builds in code, such as voxel characters, using the game's own code. Nothing is drawn by you, and no picture is saved.
+
+1. Add one preview page inside gameflow/, for example gameflow/previews/view.html, served by the game's dev server at /gameflow/previews/view.html. Use a URL parameter to choose what to draw. It imports only the game's existing code. Never edit game files for this.
+
+2. When the item has finished drawing, tell Game Flow. Use a data URL still only when the gfStill=1 parameter is present:
+
+     const message = { gameflowPreview: 'ready' };
+     if (new URLSearchParams(location.search).has('gfStill')) message.image = canvas.toDataURL('image/png');
+     parent.postMessage(message, location.origin);
+
+   If it cannot draw, send { gameflowPreview: 'error' }, and also send it on any uncaught error. For WebGL, keep the canvas readable with preserveDrawingBuffer: true.
+
+   Background: draw standalone items, such as characters and objects, on a transparent canvas with no background colour (alpha: true, and PNG as above). Game Flow supplies the same backdrop for every game. Sets and locations keep their own. Stills are shown at 16:9, so frame the item to fit.
+
+3. Without gfStill, keep it running and let the viewer turn it with the mouse. This is what Open 3D shows.
+
+4. Return one asset per item, built from the game's own list on every read:
+
+     { id: 'live/character/rookie', name: 'Rookie', type: 'live', group: 'Characters', src: '/gameflow/previews/view.html?kind=character&id=rookie', source: 'src/characters.js' }
+
+   Add its id to that character's or location's assetIds. Game Flow renders two previews at a time, then keeps only the still in the browser's memory.
+
+If the game's server cannot serve a page from gameflow/, use type 'code' with source, and say so in the report.

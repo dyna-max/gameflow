@@ -1,0 +1,8 @@
+{
+  "mode": "unconnected",
+  "projectRoot": "..",
+  "dataDir": "../game-data",
+  "adapter": "./project-adapter.mjs",
+  "gameDir": null,
+  "setupFiles": []
+}

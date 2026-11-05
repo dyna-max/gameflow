@@ -1,0 +1,5 @@
+@google/model-viewer 4.0.0
+Copyright Google LLC. Licensed under the Apache License, Version 2.0.
+https://www.apache.org/licenses/LICENSE-2.0
+Includes three.js (MIT License), Lit (BSD-3-Clause) and gainmap-js (MIT License).
+Full licence texts are in LICENSES.txt.

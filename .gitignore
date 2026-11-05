@@ -1,0 +1,8 @@
+.DS_Store
+node_modules/
+gameflow.config.json
+project-adapter.mjs
+install-baseline.json
+INSTALL_REPORT.md
+install-backup/
+*.zip
