@@ -20,4 +20,6 @@ Live previews show visuals a game builds in code, such as voxel characters, usin
 
    Add its id to that character's or location's assetIds. Game Flow renders two previews at a time, then keeps only the still in the browser's memory.
 
+For a saved copy on file hosting (npm run export), the preview page is copied to gf/previews, two folders below the upload folder. It works there only if it loads plain built files with relative paths, such as ../../js/game.js. Otherwise those items are listed with no preview.
+
 If the game's server cannot serve a page from gameflow/, use type 'code' with source, and say so in the report.

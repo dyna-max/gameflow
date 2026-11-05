@@ -1,6 +1,6 @@
 {
   "name": "game-flow-local",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "private": true,
   "type": "module",
   "engines": { "node": ">=18" },
@@ -8,6 +8,7 @@
     "start": "node server.mjs",
     "baseline": "node check.mjs baseline",
     "check": "node check.mjs",
+    "export": "node export.mjs",
     "test": "node --test tests/install.test.mjs"
   }
 }

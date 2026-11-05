@@ -12,10 +12,10 @@ Follow all of these. If one cannot be followed, stop and ask the owner.
 - **Baseline first.** Run `npm run baseline` inside gameflow before any edit.
 - **Backup before every edit.** Before changing an existing game file, copy it to `gameflow/install-backup/<same relative path>`.
 - **Stable IDs.** Reuse the game's existing IDs. Never build an ID from position, order or a counter. If stable IDs do not exist, derive them in memory from a stable name in the source, or report the data as unmapped. Never add IDs to game files.
-- **Exact, and nothing stored.** Text appears exactly as the game has it, read at runtime. Files use the game's direct URLs. No copies of story data or assets, no shadow database, no periodic export.
+- **Exact, and nothing stored.** Text appears exactly as the game has it, read at runtime. Files use the game's direct URLs. No copies of story data or assets, no shadow database, no periodic export. The one exception is the saved copy described under "Saved copy for file hosting", made only when the owner asks.
 - **Nothing generated or squeezed.** Never write, reword, summarise or generate text or media. Do not put unrelated data in `description` or another nearby field. Use the optional fields in CONTENT_AGREEMENT.md where they fit, then `catalogue` or `unmapped`.
-- **The platform is locked.** Never edit Game Flow's own files: server.mjs, check.mjs, scan-assets.mjs, public, tests or the .md files. `npm run check` compares them with KIT_MANIFEST.json. You work only in gameflow.config.json, your adapter files, gameflow/previews and INSTALL_REPORT.md. If the platform needs a change, write it in the report for the Game Flow owner.
-- **Local only.** Keep the toolkit bound to loopback. `/gf` must not be reachable from the network, even if the game's dev script uses `--host`. Do not deploy it. Do not change how the game itself is served.
+- **The platform is locked.** Never edit Game Flow's own files: server.mjs, check.mjs, export.mjs, scan-assets.mjs, public, tests or the .md files. `npm run check` compares them with KIT_MANIFEST.json. You work only in gameflow.config.json, your adapter files, gameflow/previews, evaluation.json and INSTALL_REPORT.md. If the platform needs a change, write it in the report for the Game Flow owner.
+- **Local only.** Keep the toolkit bound to loopback. `/gf` must not be reachable from the network, even if the game's dev script uses `--host`. Do not deploy it, apart from the saved copy described below. Do not change how the game itself is served.
 - **Complete report.** Every changed or new file outside gameflow goes in INSTALL_REPORT.md.
 
 No cloud services, accounts or API keys are required. Node.js 18+ is required for this toolkit. It has no npm dependencies.
@@ -57,6 +57,9 @@ Then fill what this game has, and leave out what it does not:
 
 Do not force a game into sections it does not have. Leftovers are normal. Build all of this from the source on every read where possible, so new items appear on Refresh.
 
+## 4b. Write your review
+Write evaluation.json in gameflow, as AGENT_INSTRUCTIONS.md describes. This is your honest view of the game's structure and how practical it is, and it never changes the game.
+
 ## 5. Mount routes without replacing the game
 For a game with an existing dev server (Vite, Next, etc.), start Game Flow on a DIFFERENT free loopback port using PORT. Configure the game's dev server to proxy /gf and /gf/** to Game Flow, preserving the full path, and refuse non-local requests. Keep / and all game asset routes untouched. See examples/vite-proxy.txt; adapt to the actual framework. The user opens the GAME server's /gf URL, not the toolkit port.
 For a built static game, set gameDir to its actual public build directory (never the source project root). This service serves the game at / and the toolkit at /gf. It does not build the game or provide arbitrary SPA fallback. Use the existing game server if its routing requires one.
@@ -88,8 +91,23 @@ Fix each failure and run it again. A failure about game files is never a reason 
 
 Toolkit source code, config and adapter-code changes require restarting its process. Game data changes appear on their own within about 15 seconds while the page is open, or on Refresh; if something is playing, the page shows a notice instead of interrupting. There is no automatic source-script-to-story reconciliation. The check compares the game with its baseline, so run it during install, not after later game work.
 
+## Saved copy for file hosting
+Do this only when the owner asks. Some hosts only serve files and cannot run Game Flow's program, so `/gf` cannot be live there. This command saves a copy for that host. Code makes the copy from your existing mapping: you do not write any of it, and text stays exact.
+
+1. Build the game as usual, if it has a build step.
+2. Inside gameflow, run the command with the folder that gets uploaded:
+
+       npm run export -- ../dist
+
+   Use `..` if the game has no build step. This only adds a `gf` folder inside that folder. It changes nothing else, and it stops if a `gf` folder is already there that it did not make. If so, ask the owner.
+3. Read every NOTE it prints, and tell the owner about them. Files that are not in the upload go on the Unmapped page.
+4. Zip and upload the folder as usual, leaving out `gameflow` and `node_modules`.
+5. Open the game's address with `index.html` changed to `gf/index.html`. Check that the story, images and the Game screen work there.
+
+The copy does not update by itself. Run the command again before every upload. Upload only where the owner has said it is allowed, because the host decides who can open the link.
+
 ## Upgrade from an earlier version
-Never run an older kit. The newest kit is always at https://github.com/dyna-max/gameflow/releases/latest/download/gameflow-kit.zip. Compare the version in the new package.json with gameflow/package.json; if the new one is not newer, stop and tell the owner. Do not unzip over the install by hand. Unzip somewhere else, run `npm run baseline -- --upgrade` in the installed gameflow folder, then back up and replace only toolkit runtime files: server.mjs, check.mjs, scan-assets.mjs, package.json, KIT_MANIFEST.json, public, tests, examples and the .md instructions. The route is /gf: if the game has no /gf route yet, add one, with a backup. Never remove or change any other route, including /admin, because it may be the game's own. If an old Game Flow /admin rule is still there, mention it in the report and leave it for the owner. After replacing the files, stop the old process and start the new one, so the old version is not left running. Preserve gameflow.config.json, the custom adapter, install-backup and the game's files and assets. v1 adapters keep working, and Game Flow shows “No report yet” for what they do not report. Read AGENT_INSTRUCTIONS.md, make text exact, then complete step 4, re-sort `unmapped` by kind, remove squeezed data from `description`, and add the local-only proxy guard if it is missing. Validation is stricter in v2, so a connection error after upgrading names data that v1 accepted silently: correct the adapter, not the game. Then step 7.
+Never run an older kit. The newest kit is always at https://github.com/dyna-max/gameflow/releases/latest/download/gameflow-kit.zip. Compare the version in the new package.json with gameflow/package.json; if the new one is not newer, stop and tell the owner. Do not unzip over the install by hand. Unzip somewhere else, run `npm run baseline -- --upgrade` in the installed gameflow folder, then back up and replace only toolkit runtime files: server.mjs, check.mjs, export.mjs, scan-assets.mjs, package.json, KIT_MANIFEST.json, public, tests, examples and the .md instructions. The route is /gf: if the game has no /gf route yet, add one, with a backup. Never remove or change any other route, including /admin, because it may be the game's own. If an old Game Flow /admin rule is still there, mention it in the report and leave it for the owner. After replacing the files, stop the old process and start the new one, so the old version is not left running. Preserve gameflow.config.json, the custom adapter, evaluation.json, install-backup and the game's files and assets. Update the review if the game has changed. v1 adapters keep working, and Game Flow shows “No report yet” for what they do not report. Read AGENT_INSTRUCTIONS.md, make text exact, then complete step 4, re-sort `unmapped` by kind, remove squeezed data from `description`, and add the local-only proxy guard if it is missing. Validation is stricter in v2, so a connection error after upgrading names data that v1 accepted silently: correct the adapter, not the game. Then step 7.
 
 ## Uninstall
 Uninstall only when the owner asks. Stop the toolkit process, take out only the lines Game Flow added, as listed in INSTALL_REPORT.md, and leave everything else in those files as it is now. Do not restore old files from install-backup: the game may have changed since. Then remove the gameflow folder after backing up config and adapter. Never remove the game's data.

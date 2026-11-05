@@ -14,11 +14,14 @@ const BACKUP = path.join(KIT, 'install-backup');
 const TEXT_FILE = /\.(js|jsx|mjs|cjs|ts|tsx|json|md|txt|html|ya?ml|csv|vue|svelte|xml|toml|py|lua|gd|cs|ink|fountain)$/i;
 const SETUP_FILE = /^(package\.json|(vite|next|nuxt|astro|svelte|webpack|remix)\.config\.[cm]?[jt]s)$/;
 const DETAIL_LABELS = ['Camera', 'Music', 'Ambience', 'Sound effect', 'Voice', 'Effect', 'Timing', 'Condition', 'Note'];
+const EXPORT_MARKER = 'gameflow-export.json';
 const SKIP = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.nuxt', 'out', 'coverage', '.cache', '.DS_Store', path.basename(KIT)]);
+
+const skipped = (rel, entry) => SKIP.has(entry.name) || (entry.name === 'gf' && fs.access(path.join(GAME, rel, 'gf', EXPORT_MARKER)).then(() => true, () => false));
 
 async function hashGame(rel = '', found = {}) {
   for (const entry of await fs.readdir(path.join(GAME, rel), { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue;
+    if (await skipped(rel, entry)) continue;
     const file = path.posix.join(rel, entry.name);
     if (entry.isDirectory()) await hashGame(file, found);
     else if (entry.isFile()) found[file] = crypto.createHash('sha256').update(await fs.readFile(path.join(GAME, file))).digest('hex');
@@ -45,7 +48,7 @@ const plain = text => String(text).replace(/\\u([0-9a-f]{4})/gi, (_, hex) => Str
 
 async function gameText(rel = '', parts = []) {
   for (const entry of await fs.readdir(path.join(GAME, rel), { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue;
+    if (await skipped(rel, entry)) continue;
     const file = path.posix.join(rel, entry.name);
     if (entry.isDirectory()) await gameText(file, parts);
     else if (entry.isFile() && TEXT_FILE.test(entry.name)) parts.push(plain(await fs.readFile(path.join(GAME, file), 'utf8')));
@@ -100,6 +103,8 @@ function checkData(data) {
   if (otherSections.length) console.log(`NOTE  Own catalogue sections: ${otherSections.join(', ')}. Use a standard section where one fits.`);
   const noPreview = (data.assets?.items || []).filter(a => a.type === 'code' || (a.type === '3d' && !/\.(glb|gltf)(\?|$)/i.test(a.src || '')));
   if (noPreview.length) console.log(`NOTE  ${noPreview.length} asset(s) with no preview: ${noPreview.slice(0, 12).map(a => a.name || a.id).join(', ')}. Add a live preview where it is easy; see examples/live-preview.txt.`);
+  if (data.evaluation?.error) console.log(`NOTE  ${data.evaluation.error}`);
+  else if (!data.evaluation) console.log('NOTE  No review yet. Write evaluation.json; see AGENT_INSTRUCTIONS.md.');
   console.log(`INFO  Catalogue sections: ${data.catalogue?.sections?.length || 0}`);
   console.log(`INFO  Expected play time: ${data.story?.expectedMinutes ?? 'not given by the game team'}`);
   for (const ep of data.flow || []) {

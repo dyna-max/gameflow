@@ -8,7 +8,7 @@ Read this first, then INSTALL.md and CONTENT_AGREEMENT.md.
 | Layer | What it is | Can you change it? |
 |---|---|---|
 | Game | Story, text, images, sound, 3D, code | **No, never** |
-| Mapping | `gameflow.config.json`, your adapter files, `gameflow/previews`, `INSTALL_REPORT.md` | Yes, this is your work |
+| Mapping | `gameflow.config.json`, your adapter files, `gameflow/previews`, `evaluation.json`, `INSTALL_REPORT.md` | Yes, this is your work |
 | Game Flow | The platform: `server.mjs`, `check.mjs`, `public` and the rest of the kit | **No, it is locked** |
 
 You fill data into Game Flow. You do not change Game Flow. The look and layout are the platform's, and every game gets the same ones. The adjustments you may make are in the mapping: level names, sections, labels, previews and which data goes where. If the platform lacks something, write it in the report for the Game Flow owner.
@@ -21,10 +21,13 @@ Do your best, and don't force it: organise what you can and make sure it loads p
 - **Visuals built in code:** draw them only by running the game's own code, in a preview page inside `gameflow/`. Never draw, model, paint or generate a visual yourself, and never save a picture. Build the list from the game's own data so it populates itself.
 - **Preview backgrounds:** draw standalone items such as characters and objects on a transparent background, so every game looks the same in Game Flow. Sets and locations keep their own.
 - **Play time:** show only numbers the game team gives. Never calculate or estimate them.
-- **Nothing stored:** read on every request. No copies of content, no export, no second database.
+- **Nothing stored:** read on every request. No copies of content, no export, no second database. The one exception is `npm run export`, which saves a copy for hosting that only serves files, only when the owner asks. Code makes it; you write none of it.
 - **IDs:** use the game's own IDs. If it has none, build them in memory from a stable name. Never add IDs to game files.
 - **What does not fit:** put it in `catalogue` or `unmapped` with the right kind. Never drop it or squeeze it into another field. Leftovers are normal.
-- **Your own words:** only `reason` on unmapped items, `when` on conditions, and titles of your own catalogue sections are yours. They describe the mapping and are never game content.
+- **Your own words:** only `reason` on unmapped items, `when` on conditions, titles of your own catalogue sections and your review in `evaluation.json` are yours. They describe the mapping and are never game content.
+
+## Your review of the game
+After mapping, write `gameflow/evaluation.json`. It appears on the Review page, labelled as your opinion. Give your true assessment of how the game is structured and how practical it is. Be direct and specific, not polite: if the game is confusing, thin or hard to follow, say so and say why. Point to what you actually found, and use `cannot-tell` when you could not judge something. Say in `basedOn` what you really did, such as reading the code or playing it. Do not guess numbers or invent facts. A review never changes the game: list what you would fix, and leave the game alone. See CONTENT_AGREEMENT.md for the format.
 
 ## The only game files you may touch
 The file that mounts the `/gf` route, usually the dev server config, and a start script in `package.json`. Back each up first. These are setup, not content. Only add what `/gf` needs. Change nothing outside the game folder.
@@ -34,4 +37,4 @@ The file that mounts the `/gf` route, usually the dev server config, and a start
 **Never run an older kit.** On an update, if the new kit's version is not newer than the installed one, stop and tell the owner. If you think anything else must change, stop and ask the owner; the answer is usually to list it as unmapped.
 
 ## Finish
-Keep Game Flow local-only. Finish only when `npm run check` passes. Describe unconnected, connected-empty and connection-error states truthfully. Do not call an unimplemented adapter connected, and do not claim a media format works without testing it.
+Keep Game Flow local-only, apart from that saved copy. Finish only when `npm run check` passes. Describe unconnected, connected-empty and connection-error states truthfully. Do not call an unimplemented adapter connected, and do not claim a media format works without testing it.
