@@ -46,9 +46,9 @@ Read CONTENT_AGREEMENT.md. Copy gameflow.config.example.json to gameflow.config.
 
 ## 4. Report assets, pages and leftovers
 Report as much as you can. The check notes anything not reported yet.
-- `assets`: every asset file, including sound and audition takes. Use `scanAssets` from scan-assets.mjs on each served folder so the list comes from the real files on every read. Link assets to characters, locations and shots with `assetIds`.
+- `assets`: every asset file, including sound and audition takes. Use `scanAssets` from scan-assets.mjs on each served folder so the list comes from the real files on every read. Link assets to characters, locations and shots with `assetIds`. Give each asset a `group` that is a real category for this game, such as Characters, Weapons or Environment, not a file type like glb. Set `brand` on the app icon, splash screen and logo the game uses, and on branding tryouts, such as from the manifest, favicon or loading screen.
 - Visuals built in code: if characters, sets or props have no files, add `live` assets, generated from the game's own lists on every read, with a preview page inside gameflow/ as described in examples/live-preview.txt. Previews should be easy; use `code` with `source` and `reason` for anything that is not. Do not mark them as missing. 3D files need no preview page.
-- `pages`: every page found in step 2, with its route and kind, including mock pages.
+- `pages`: every page in the game, with its route, kind and `source` file, including mock, test and audition pages. Miss none: the Pages page is the reviewer's index of the game. `npm run check` fails if any HTML file in the game is not listed. If an HTML file is not a real page, such as a template, list it in `unmapped` with that file as `source` and say why. Screens built in code, such as router routes or in-game menus, have no file the check can find, so list them from the router or the game's screen list yourself.
 - `unmapped`: every leftover, grouped by kind of data. Use `kind: "missing-asset"` only when the game expects a file and it is not there; something built in code is not missing. Use `"stays-in-game"` for data reviewers do not need, such as level rules. Use `"unsupported-data"` for the rest.
 
 Then fill what this game has, and leave out what it does not:

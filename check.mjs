@@ -109,6 +109,14 @@ function checkData(data) {
   if (otherSections.length) console.log(`NOTE  Own catalogue sections: ${otherSections.join(', ')}. Use a standard section where one fits.`);
   const noPreview = (data.assets?.items || []).filter(a => a.type === 'code' || (a.type === '3d' && !/\.(glb|gltf)(\?|$)/i.test(a.src || '')));
   if (noPreview.length) console.log(`NOTE  ${noPreview.length} asset(s) with no preview: ${noPreview.slice(0, 12).map(a => a.name || a.id).join(', ')}. Add a live preview where it is easy; see examples/live-preview.txt.`);
+  const brands = new Set((data.assets?.items || []).map(a => a.brand));
+  const noBrand = [['app-icon', 'app icon'], ['splash', 'splash screen']].filter(([key]) => !brands.has(key)).map(([, label]) => label);
+  if (noBrand.length) console.log(`NOTE  No ${noBrand.join(' or ')} marked in assets. Set brand on that asset if the game has one; Branding shows it as not found otherwise.`);
+  const groups = (data.assets?.items || []).filter(a => !a.brand).map(a => a.group || 'Other');
+  const fileTypeGroups = [...new Set(groups)].filter(g => /^(\.?(glb|gltf|fbx|obj|png|jpe?g|webp|gif|svg|mp3|wav|ogg|m4a|aac|mp4|webm|json)s?|other|files?|assets?|models?|images?|textures?)$/i.test(g.split('/').pop()));
+  if (fileTypeGroups.length) console.log(`NOTE  Asset categories named after a file type or folder: ${fileTypeGroups.join(', ')}. Use categories a reviewer understands, such as Characters, Weapons or Environment.`);
+  const big = [...new Set(groups)].filter(g => groups.filter(x => x === g).length > 60);
+  if (big.length) console.log(`NOTE  Asset categories with more than 60 items: ${big.join(', ')}. Split them so each tab loads quickly.`);
   if (data.catalogError) console.log(`NOTE  ${data.catalogError}. The Overview, Plan and Design pages show this error until it is fixed.`);
   for (const [key, title] of Object.entries(WRITEUPS)) if (!data[key]) console.log(`NOTE  No ${title} yet. Write it in catalog.json; see AGENT_INSTRUCTIONS.md.`);
   const blocks = writeupBlocks(data);
@@ -129,6 +137,27 @@ function checkData(data) {
     console.log(`INFO  ${ep.id}: ${ep.shotCount} shots, ${ep.branches} with choices, ${ep.endings.length} ending(s)`);
     if (ep.unreachable.length) console.log(`NOTE  ${ep.id}: no path reaches ${ep.unreachable.join(', ')}. Check the links or the mapping.`);
   }
+}
+
+async function htmlFiles(rel = '', found = []) {
+  for (const entry of await fs.readdir(path.join(GAME, rel), { withFileTypes: true })) {
+    if (entry.name.startsWith('.') || await skipped(rel, entry)) continue;
+    const file = path.posix.join(rel, entry.name);
+    if (entry.isDirectory()) await htmlFiles(file, found);
+    else if (entry.isFile() && /\.html?$/i.test(entry.name)) found.push(file);
+  }
+  return found;
+}
+
+// No page may be missed: every HTML file must be on the Pages page, or on Unmapped with a reason.
+async function checkAllPages(data) {
+  const routeFile = route => { const p = decodeURI(route.split(/[?#]/)[0]).replace(/^\/+/, ''); return !p || p.endsWith('/') ? p + 'index.html' : p; };
+  const sources = new Set([...data.pages.items.map(p => p.source), ...(data.ui?.mocks || []).map(m => m.target), ...data.unmapped.items.map(u => u.source)].filter(Boolean).map(s => s.replace(/^\.?\/+/, '')));
+  const routes = [...data.pages.items.map(p => p.route), ...(data.ui?.mocks || []).map(m => m.previewSrc)].filter(r => typeof r === 'string' && r.startsWith('/') && !r.startsWith('//')).map(routeFile);
+  const listed = file => sources.has(file) || routes.some(r => file === r || file.endsWith('/' + r));
+  const all = await htmlFiles(), missed = all.filter(file => !listed(file));
+  if (!missed.length) pass(`All ${all.length} HTML page(s) in the game are on the Pages page or explained on Unmapped`);
+  else fail(`${missed.length} HTML page(s) in the game are not listed: ${missed.slice(0, 12).join(', ')}${missed.length > 12 ? ' and more' : ''}`, 'Add each to pages with its route, kind and source. If one is not a real page, such as a template, list it in unmapped with that file as source and say why.');
 }
 
 async function checkPlatformFiles() {
@@ -238,6 +267,7 @@ async function main() {
     checkData(data);
     await checkExactText(data);
     await checkUrls(base, 'assets', data.assets.items.filter(a => a.src).map(a => ({ name: a.id, url: a.src, html: a.type === 'live' })));
+    await checkAllPages(data);
     await checkUrls(base, 'pages', data.pages.items.filter(p => p.route?.startsWith('/')).map(p => ({ name: p.name, url: p.route, html: true })));
     await checkLocalOnly(base);
   }
