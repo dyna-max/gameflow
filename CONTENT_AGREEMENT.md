@@ -47,7 +47,9 @@ Use these only when the game has the data. They feed the Story view and Play epi
 - `details[]`: `{ "label", "value" }` for anything else worth reviewing on that shot. Use these labels where they fit, whatever the game calls the field: Camera, Music, Ambience, Sound effect, Voice, Effect, Timing, Condition, Note. The value stays as the game has it.
 
 ## Expected play time
-These numbers come from the game team, and Catalog only shows them. Never calculate or estimate them. If the team has not given them, leave them out and Story says so.
+`expectedMinutes` and `minutesSoFar` come from the game team, and Catalog only shows them. Never calculate or estimate them in the mapping. Your own estimate goes in catalog.json as `playTime` (see below).
+
+The top of Story shows a short summary: how many of each story level there are, using the game's own names such as Missions or Levels, and the play time. Play time comes from `story.expectedMinutes`, or else the sum of every episode's `expectedMinutes`, or else the `playTime` estimate, shown as "AI estimate".
 
 - `story.expectedMinutes`: expected play time for the whole game
 - `expectedMinutes` on an episode, chapter, scene or shot: expected time for that part
@@ -58,11 +60,13 @@ On a character, `playerChosen: true` marks one the player picks, such as a selec
 Link files with `assetIds`. Values come from the game as written. Keep the list short; reviewers use it to check the story, not to rebuild the game.
 
 ## Overview, plan and design
-These three pages describe the game. The assistant writes them in `gameflow/catalog.json`, in the kit folder and never in the game's files:
+These three pages, Overview, Plan and Game design, describe the game. The assistant writes them in `gameflow/catalog.json`, in the kit folder and never in the game's files:
 
-    {"writtenOn": "2026-11-10", "overview": {...}, "plan": {...}, "design": {...}}
+    {"writtenOn": "2026-11-10", "overview": {...}, "plan": {...}, "design": {...}, "playTime": {...}}
 
-An adapter may instead return `overview`, `plan` or `design` built from the game's own data, such as a task list. That part then updates live and wins over catalog.json. A `files` connection may supply `overview.json`, `plan.json` and `design.json` in dataDir. A broken catalog.json never breaks the connection: the three pages show the error.
+`playTime` is `{minutes, maxMinutes, basis}`: the estimated time to finish the game, in minutes, with an optional upper end for a range, and `basis` saying how you got it, such as "12 missions at about 25 to 35 minutes each". It is always shown as an AI estimate, and only when the game team has not given `expectedMinutes`.
+
+An adapter may instead return `overview`, `plan` or `design` built from the game's own data, such as a task list. That part then updates live and wins over catalog.json. A `files` connection may supply `overview.json`, `plan.json` and `design.json` in dataDir. A broken catalog.json never breaks the connection: these pages show the error.
 
 Each part is an object, and every field is optional:
 - `summary`: a few lines, as text or as a block `{text, by, source}`
@@ -72,12 +76,14 @@ Each part is an object, and every field is optional:
 
 `by` says where a block came from. It is `ai` by default, shown as "AI's reading". Use `game` only for text copied exactly from a game file named in `source`. The check fails if that text is not in the game files.
 
-Design sections use these IDs where they fit, so games read alike: `core-loop`, `controls`, `rules`, `goals`, `progression`, `levels`, `economy`, `look-and-feel`. They need no title. Add your own sections, with a title, for anything else. Unused standard sections are listed as not found for this game.
+Game design has tabs, one per category. Five are always shown, in this order, so every game reads alike and a reviewer sees what is missing: Core loop, Levelling up, Levels and difficulty, Economy, Unlocks and rewards. Each section may have a `group`: one of these five, or a category of the assistant's own, which comes after them. Sections may use the standard IDs `core-loop`, `level-up`, `levels`, `economy`, `unlocks`, `controls`, `rules`, `goals` and `look-and-feel`; these need no title or group, and the last four go under Rules and controls or Look and feel. Any other mechanic gets its own id and title.
+
+Game design may also have `economy[]`: `{resource, sources[], sinks[], by, source}`, one row per resource such as coins, XP or wood. `sources` are where it comes from, `sinks` where it is spent or lost. It shows as a table in the Economy tab, and the check lists resources that are earned but never spent, or spent but never earned.
 
 The Plan page also shows what Catalog found by code, such as how many characters have a picture and how many files failed to load. That part is counted, not written.
 
 ## Catalogue
-`catalogue: {sections: [{id, title, description, browser, items: [{id, name, description, source, route, assetIds, details}]}]}` holds what this game has beyond the story, characters and locations. Use a standard section where one fits, so games read alike: `mini-games`, `music-and-sound`, `items`, `resources`, `enemies`, `stats`, `economy`, `maps`, `screens`. These need no title, and `music-and-sound` appears in Sound. Add your own section, with a title, only when none fits. `id`, `items` and each item's `id` and `name` are required. Use `browser` of `characters`, `locations`, `sound`, `ui`, `overview`, `plan` or `design` to show a section on that page, such as sound made in code in Sound, or the game's level list in Game design. Without `browser`, it appears on the More page. Leave out what the game does not have. Catalog lists unused standard sections as not listed for this game.
+`catalogue: {sections: [{id, title, description, browser, items: [{id, name, description, source, route, assetIds, details}]}]}` holds what this game has beyond the story, characters and locations. Use a standard section where one fits, so games read alike: `mini-games`, `music-and-sound`, `items`, `resources`, `enemies`, `stats`, `economy`, `maps`, `screens`. These need no title, and `music-and-sound` appears in Sound. Add your own section, with a title, only when none fits. `id`, `items` and each item's `id` and `name` are required. Use `browser` of `characters`, `locations`, `sound`, `ui`, `overview`, `plan` or `design` to show a section on that page, such as sound made in code in Sound, or the game's level list or resources in Game design. Without `browser`, it appears on the More page. Leave out what the game does not have. Catalog lists unused standard sections as not listed for this game.
 
 ## Review
 `gameflow/evaluation.json` holds the assistant's own review of the game: `{writtenOn, basedOn, summary, points: [{topic, verdict, note, evidence}], next: []}`. `verdict` is `good`, `okay`, `weak` or `cannot-tell`. Suggested topics: Story and structure, Clarity for the player, Core loop, Content completeness, Practicality, Biggest risk. `next` lists what to fix first. It is opinion, shown apart from game content, and stays in the gameflow folder.

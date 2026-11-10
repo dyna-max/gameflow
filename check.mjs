@@ -119,6 +119,10 @@ function checkData(data) {
   if (big.length) console.log(`NOTE  Asset categories with more than 60 items: ${big.join(', ')}. Split them so each tab loads quickly.`);
   if (data.catalogError) console.log(`NOTE  ${data.catalogError}. The Overview, Plan and Design pages show this error until it is fixed.`);
   for (const [key, title] of Object.entries(WRITEUPS)) if (!data[key]) console.log(`NOTE  No ${title} yet. Write it in catalog.json; see AGENT_INSTRUCTIONS.md.`);
+  const gameTime = data.story?.expectedMinutes !== undefined || (data.story?.episodes?.length && data.story.episodes.every(e => e.expectedMinutes !== undefined));
+  const pt = data.playTime;
+  if (pt && !(typeof pt.minutes === 'number' && pt.minutes >= 0)) console.log('NOTE  playTime in catalog.json needs "minutes" as a number. Story shows play time as not known.');
+  else if (!pt && !gameTime) console.log('NOTE  No play time. Estimate it in catalog.json as playTime; see AGENT_INSTRUCTIONS.md.');
   const blocks = writeupBlocks(data);
   const noSource = blocks.filter(({ block }) => block.by === 'game' && !block.source);
   if (noSource.length) console.log(`NOTE  ${noSource.length} block(s) marked "by": "game" have no source file. Add the file it came from.`);
@@ -126,8 +130,15 @@ function checkData(data) {
   if (badStatus.length) console.log(`NOTE  ${badStatus.length} plan item(s) have no known status and show as Not clear: ${badStatus.slice(0, 8).map(x => x.title || x.id).join(', ')}. Use ${PLAN_STATUSES.join(', ')}.`);
   const otherFacts = [...new Set(list(data.overview?.facts).map(f => f.label).filter(label => !FACT_LABELS.includes(label)))];
   if (otherFacts.length) console.log(`NOTE  Overview facts not on the standard list: ${otherFacts.join(', ')}. Use ${FACT_LABELS.join(', ')} where they fit.`);
-  const otherDesign = list(data.design?.sections).map(x => x.id).filter(id => !data.standardDesign?.some(x => x.id === id));
-  if (otherDesign.length) console.log(`NOTE  Own design sections: ${otherDesign.join(', ')}. Use a standard one where it fits.`);
+  const CORE = { 'Core loop': ['core-loop'], 'Levelling up': ['level-up', 'progression'], 'Levels and difficulty': ['levels'], Economy: ['economy'], 'Unlocks and rewards': ['unlocks'] };
+  const sections = list(data.design?.sections);
+  const emptyCore = data.design ? Object.entries(CORE).filter(([g, ids]) => !sections.some(x => x.group === g || (!x.group && ids.includes(x.id))) && !(g === 'Economy' && list(data.design.economy).length)).map(([g]) => g) : [];
+  if (emptyCore.length) console.log(`NOTE  Game design has nothing for: ${emptyCore.join(', ')}. Describe it, or say the game has none.`);
+  const economy = list(data.design?.economy).filter(r => typeof r.resource === 'string');
+  const side = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'string' && x.trim());
+  const noSink = economy.filter(r => side(r.sources).length && !side(r.sinks).length).map(r => r.resource);
+  const noSourceRes = economy.filter(r => side(r.sinks).length && !side(r.sources).length).map(r => r.resource);
+  if (economy.length) console.log(`INFO  Economy: ${economy.length} resource(s)${noSink.length ? `; earned but never spent: ${noSink.join(', ')}` : ''}${noSourceRes.length ? `; spent but never earned: ${noSourceRes.join(', ')}` : ''}`);
   if (data.evaluation?.error) console.log(`NOTE  ${data.evaluation.error}`);
   else if (!data.evaluation) console.log('NOTE  No review yet. Write evaluation.json; see AGENT_INSTRUCTIONS.md.');
   console.log(`INFO  Catalogue sections: ${data.catalogue?.sections?.length || 0}`);

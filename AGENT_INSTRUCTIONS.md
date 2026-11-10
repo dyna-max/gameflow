@@ -31,10 +31,11 @@ Do your best, and don't force it: organise what you can and make sure it loads p
 - **Your own words:** only `reason` on unmapped items, `when` on conditions, titles of your own catalogue sections, `catalog.json` and your review in `evaluation.json` are yours. They are never shown as game content.
 
 ## Overview, plan and design
-After mapping, write `gameflow/catalog.json` with three parts. CONTENT_AGREEMENT.md has the format.
+After mapping, write `gameflow/catalog.json` with these parts. CONTENT_AGREEMENT.md has the format.
 - **Overview:** what this is, in a few lines, and facts such as Type, Genre, Platform, Built with, Stage and Audience.
 - **Plan and progress:** what is done, in progress, planned or blocked. Take it only from what the game has, such as a to-do list, roadmap, design notes, issue list, comments or code that is clearly unfinished. Say in `source` where each item came from. If the game has no plan, leave `items` empty and say so in the summary. Never invent a roadmap.
-- **Game design:** the core loop, controls, rules, goals and how you win or lose, progression, levels, economy, and look and feel. Use the standard section IDs where they fit. Add your own sections for anything else that matters.
+- **Play time:** how many hours a player spends to finish the game, as `playTime`. Base it on what you counted, such as how many episodes, missions, levels or scenes there are and how long one takes, and write that reasoning in `basis`. Give a range when you are unsure. If the game team gives real times in `expectedMinutes`, those are shown instead.
+- **Game design:** how the game works, written your own way, one section per mechanic. Five categories guide you and are always shown as tabs: Core loop, Levelling up, Levels and difficulty, Economy, and Unlocks and rewards. Set each section's `group` to one of these, or to a category of your own, such as Combat or Rules and controls, when none fits. Add as many as the game needs. For the economy you may list each resource with where it comes from and where it goes. If the game has none of a category, say so in it.
 
 Fill these your own way: every game is different, and you decide what is worth saying. Two rules hold:
 - **Mark where each block came from.** The default, `"by": "ai"`, shows as "AI's reading". Use `"by": "game"` only for text copied exactly from a game file, and give that file as `source`. `npm run check` fails if text marked as from the game is not in the game files.
