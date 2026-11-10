@@ -1,4 +1,4 @@
-// Saves a copy of Game Flow beside a game hosted as plain files.
+// Saves a copy of Catalog beside a game hosted as plain files.
 // Usage: npm run export -- ../dist   (the folder you upload; use .. if the game has no build step)
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -54,7 +54,7 @@ export async function exportCopy({ root = KIT, target: chosen }) {
 
   const cfg = await readConfig(root);
   if (cfg.configError) throw Error(cfg.configError);
-  if (!cfg.mode || cfg.mode === 'unconnected') throw Error('No game data is connected yet. Install Game Flow first.');
+  if (!cfg.mode || cfg.mode === 'unconnected') throw Error('No game data is connected yet. Install Catalog first.');
   const data = await snapshot(root, cfg);
 
   await fs.rm(out, { recursive: true, force: true });
@@ -101,7 +101,7 @@ export async function exportCopy({ root = KIT, target: chosen }) {
   if (noPreview.length) notes.push(`${noPreview.length} live preview(s) cannot run from plain files and are listed with no preview: ${noPreview.slice(0, 8).join(', ')}. Load the game's own built code with relative paths; see examples/live-preview.txt.`);
   if (brokenRoutes.length) notes.push(`${brokenRoutes.length} page route(s) have no file here, so their links will not open: ${brokenRoutes.slice(0, 8).join(', ')}`);
   const gamePage = await fs.readFile(path.join(target, 'index.html'), 'utf8');
-  if (/(?:src|href)=["']\/(?!\/)/.test(gamePage)) notes.push('The game\'s index.html uses addresses starting with /. They may fail when the game is hosted in a subfolder, and Game Flow cannot change that.');
+  if (/(?:src|href)=["']\/(?!\/)/.test(gamePage)) notes.push('The game\'s index.html uses addresses starting with /. They may fail when the game is hosted in a subfolder, and Catalog cannot change that.');
   if (/\.(jsx|tsx)["']/.test(gamePage)) notes.push('This folder looks like source code, not a build. Build the game and export to its build folder.');
   return { out, shots: data.validation.shotCount, notes };
 }

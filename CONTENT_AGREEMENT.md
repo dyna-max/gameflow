@@ -1,8 +1,10 @@
-# Game Flow content agreement
+# Catalog content agreement
 
-The story format stays at `formatVersion: 1`. Kit v2 added `assets`, `pages` and `assetIds`. Kit v3 adds the optional shot fields below, `catalogue`, and `stays-in-game` on unmapped items. Older data still reads. Every game is different: fill what the game has and leave the rest out.
+Catalog was called Game Flow until v3.7.
 
-The host game owns the content. Game Flow only reads it: its existing files directly, or mapped in memory through readProject. It never changes them. Text appears exactly as the game has it, and files use the game's direct URLs. Never create a second copy. The game continues to consume its own source files.
+The story format stays at `formatVersion: 1`. Kit v2 added `assets`, `pages` and `assetIds`. Kit v3 adds the optional shot fields below, `catalogue`, and `stays-in-game` on unmapped items. Kit v4 adds `overview`, `plan` and `design`, and a game with no story is fine. Older data still reads. Every game is different: fill what the game has and leave the rest out.
+
+The host game owns the content. Catalog only reads it: its existing files directly, or mapped in memory through readProject. It never changes them. Text appears exactly as the game has it, and files use the game's direct URLs. Never create a second copy. The game continues to consume its own source files.
 
 ## Identity and hierarchy
 
@@ -14,7 +16,7 @@ This tree is fixed for every timeline-based game, so any game's storyline reads 
 
 The four levels keep the same structure, and a game can name them for its core loop with `story.levelNames`, such as `{ "episode": "Mission", "chapter": "Task", "scene": "Stage", "shot": "Step" }`. Story then counts and labels them that way, such as "3 Missions · 9 Tasks · 31 Steps". Leave a name out to keep the default.
 
-Each level has `id`, and `title` if the game has one. Never invent a title for a level: leave it out and Game Flow hides that level. A shot's title may be left out or be its source ID, and Game Flow shows the ID tidied, such as "Grandma bedtime". Content that is not on a timeline, such as items or level rules, goes in the catalogue. A game with no timeline just has an empty story. Episodes, chapters, and scenes may also contain `story` and `characterIds[]` when the game has them. `story.json` also has `formatVersion: 1` and `startShotId`.
+Each level has `id`, and `title` if the game has one. Never invent a title for a level: leave it out and Catalog hides that level. A shot's title may be left out or be its source ID, and Catalog shows the ID tidied, such as "Grandma bedtime". Content that is not on a timeline, such as items or level rules, goes in the catalogue. A game with no timeline just has an empty story. Episodes, chapters, and scenes may also contain `story` and `characterIds[]` when the game has them. `story.json` also has `formatVersion: 1` and `startShotId`.
 
 ## Shot fields
 
@@ -28,7 +30,7 @@ Each level has `id`, and `title` if the game has one. Never invent a title for a
 
 - `assetIds[]`: optional references into `assets`, such as the shot's voice line
 
-Every `nextShotId` must resolve to an existing shot, and every choice needs one. A terminal shot omits `nextShotId` and has no choices. Media types may be mixed shot by shot. Every cast, set, speaker and asset reference must resolve, or Game Flow shows a connection error naming it.
+Every `nextShotId` must resolve to an existing shot, and every choice needs one. A terminal shot omits `nextShotId` and has no choices. Media types may be mixed shot by shot. Every cast, set, speaker and asset reference must resolve, or Catalog shows a connection error naming it.
 
 `description` is the written on-screen action only. Leave it out if the game has none; do not write new story text.
 
@@ -45,7 +47,7 @@ Use these only when the game has the data. They feed the Story view and Play epi
 - `details[]`: `{ "label", "value" }` for anything else worth reviewing on that shot. Use these labels where they fit, whatever the game calls the field: Camera, Music, Ambience, Sound effect, Voice, Effect, Timing, Condition, Note. The value stays as the game has it.
 
 ## Expected play time
-These numbers come from the game team, and Game Flow only shows them. Never calculate or estimate them. If the team has not given them, leave them out and Story says so.
+These numbers come from the game team, and Catalog only shows them. Never calculate or estimate them. If the team has not given them, leave them out and Story says so.
 
 - `story.expectedMinutes`: expected play time for the whole game
 - `expectedMinutes` on an episode, chapter, scene or shot: expected time for that part
@@ -55,26 +57,46 @@ On a character, `playerChosen: true` marks one the player picks, such as a selec
 
 Link files with `assetIds`. Values come from the game as written. Keep the list short; reviewers use it to check the story, not to rebuild the game.
 
-## Catalogue
-`catalogue: {sections: [{id, title, description, browser, items: [{id, name, description, source, route, assetIds, details}]}]}` holds what this game has beyond the story, characters and locations. Use a standard section where one fits, so games read alike: `mini-games`, `music-and-sound`, `items`, `resources`, `enemies`, `stats`, `economy`, `maps`, `screens`. These need no title, and `music-and-sound` appears in Sound. Add your own section, with a title, only when none fits. `id`, `items` and each item's `id` and `name` are required. Use `browser` of `characters`, `locations`, `sound` or `ui` to show a section in that browser, such as sound made in code in Sound. Without `browser`, it appears on the Catalogue page. Leave out what the game does not have. Game Flow lists unused standard sections as not listed for this game.
+## Overview, plan and design
+These three pages describe the game. The assistant writes them in `gameflow/catalog.json`, in the kit folder and never in the game's files:
 
-## Assets
+    {"writtenOn": "2026-11-10", "overview": {...}, "plan": {...}, "design": {...}}
+
+An adapter may instead return `overview`, `plan` or `design` built from the game's own data, such as a task list. That part then updates live and wins over catalog.json. A `files` connection may supply `overview.json`, `plan.json` and `design.json` in dataDir. A broken catalog.json never breaks the connection: the three pages show the error.
+
+Each part is an object, and every field is optional:
+- `summary`: a few lines, as text or as a block `{text, by, source}`
+- `facts[]`: `{label, value, by, source}`. Use these labels where they fit: Type, Genre, Platform, Built with, Stage, Audience, Players, Session length, Controls, Made by.
+- `sections[]`: `{id, title, text, points[], by, source}`, shown as cards
+- `items[]`, on the plan only: `{id, title, status, area, note, by, source}`, where `status` is `done`, `in-progress`, `planned`, `blocked` or `unknown`. Items are grouped by `area`, such as Story, Art or Code. A progress bar counts them.
+
+`by` says where a block came from. It is `ai` by default, shown as "AI's reading". Use `game` only for text copied exactly from a game file named in `source`. The check fails if that text is not in the game files.
+
+Design sections use these IDs where they fit, so games read alike: `core-loop`, `controls`, `rules`, `goals`, `progression`, `levels`, `economy`, `look-and-feel`. They need no title. Add your own sections, with a title, for anything else. Unused standard sections are listed as not found for this game.
+
+The Plan page also shows what Catalog found by code, such as how many characters have a picture and how many files failed to load. That part is counted, not written.
+
+## Catalogue
+`catalogue: {sections: [{id, title, description, browser, items: [{id, name, description, source, route, assetIds, details}]}]}` holds what this game has beyond the story, characters and locations. Use a standard section where one fits, so games read alike: `mini-games`, `music-and-sound`, `items`, `resources`, `enemies`, `stats`, `economy`, `maps`, `screens`. These need no title, and `music-and-sound` appears in Sound. Add your own section, with a title, only when none fits. `id`, `items` and each item's `id` and `name` are required. Use `browser` of `characters`, `locations`, `sound`, `ui`, `overview`, `plan` or `design` to show a section on that page, such as sound made in code in Sound, or the game's level list in Game design. Without `browser`, it appears on the More page. Leave out what the game does not have. Catalog lists unused standard sections as not listed for this game.
+
+## Review
 `gameflow/evaluation.json` holds the assistant's own review of the game: `{writtenOn, basedOn, summary, points: [{topic, verdict, note, evidence}], next: []}`. `verdict` is `good`, `okay`, `weak` or `cannot-tell`. Suggested topics: Story and structure, Clarity for the player, Core loop, Content completeness, Practicality, Biggest risk. `next` lists what to fix first. It is opinion, shown apart from game content, and stays in the gameflow folder.
 
+## Assets
 `assets: {items: [{id, name, type, src, source, group}]}`, where `type` is `image`, `audio`, `video`, `3d`, `live`, `code` or `other`. `src` is the URL the game already serves the file from, starting with `/` or `http`.
 
-Visuals the game builds in code have no file. Use `live` when there is a preview page: `src` is that page, which draws the item with the game's own code (see examples/live-preview.txt). Game Flow shows a still and an Open 3D button. Use `code` with `source`, and `reason` saying why, when no preview is possible yet. A `3d` asset with a `.glb` or `.gltf` URL needs no preview page: Game Flow opens the real file in its own viewer. Neither counts as missing, and neither stores an image.
+Visuals the game builds in code have no file. Use `live` when there is a preview page: `src` is that page, which draws the item with the game's own code (see examples/live-preview.txt). Catalog shows a still and an Open 3D button. Use `code` with `source`, and `reason` saying why, when no preview is possible yet. A `3d` asset with a `.glb` or `.gltf` URL needs no preview page: Catalog opens the real file in its own viewer. Neither counts as missing, and neither stores an image.
 
 Let assets populate themselves: build them from the game's own lists and folders on every read, so a new character, set or file appears with nothing else to update. Link each to its character or location with `assetIds`; Story and Play episode then show that location and cast for each shot. `group` is an optional folder or label, such as `voices/audition`.
 
-List every asset, including sound and audition takes, and link them with `assetIds` on characters, locations and shots. Assets stay where they are: Game Flow loads each one from `src` and shows whether it loaded in that browser. Never copy files into the toolkit. Use `scanAssets` from `scan-assets.mjs` so the list comes from the real folder on every read.
+List every asset, including sound and audition takes, and link them with `assetIds` on characters, locations and shots. Assets stay where they are: Catalog loads each one from `src` and shows whether it loaded in that browser. Never copy files into the toolkit. Use `scanAssets` from `scan-assets.mjs` so the list comes from the real folder on every read.
 
 ## Pages
-`pages: {items: [{id, name, kind, route, source, status}]}` lists every page in the game. `kind` is a label such as `game`, `story`, `mock` or `audition`. `route` is the browser path if it has one; `source` is the project-relative file; `status` is optional. Game Flow shows the total and a count for each kind.
+`pages: {items: [{id, name, kind, route, source, status}]}` lists every page in the game. `kind` is a label such as `game`, `story`, `mock` or `audition`. `route` is the browser path if it has one; `source` is the project-relative file; `status` is optional. Catalog shows the total and a count for each kind.
 
 ## UI mock review
 
-`ui.json` is a review register, not a UI generator. `mocks[]` lists UI proposals the game already has. Each mock uses a stable `id`, `name`, `target`, optional `description`, optional `previewSrc` browser path, optional `generatedBy`, and `status` of `pending`, `accepted`, or `rejected`. Game Flow displays status and never changes it. Mocks are also counted on the Unmapped page under Game pages.
+`ui.json` is a review register, not a UI generator. `mocks[]` lists UI proposals the game already has. Each mock uses a stable `id`, `name`, `target`, optional `description`, optional `previewSrc` browser path, optional `generatedBy`, and `status` of `pending`, `accepted`, or `rejected`. Catalog displays status and never changes it. Mocks are also counted on the Unmapped page under Game pages.
 
 ## Story views
 
@@ -82,10 +104,10 @@ Story is the sole script-reading workspace. Scene overview uses scene `story`, o
 
 Optional shot fields: `narration` (string) and `subtitles` (string). Omitted subtitles follow dialogue text and narration automatically. Supply subtitle text only for an intentional override. Dialogue and narration are optional; silent shots are valid. `description` is the on-screen action, `characterIds` and `locationId` reference Casting and Sets, and `media` supplies the shot preview. Read scene displays shots in authoring order with explicit branch destinations. Play episode follows the real play order from the episode's first shot (`startShotId` if it is in that episode), so it follows `nextShotId` and the choices you pick.
 
-Game Flow has no editing controls, and its server refuses every write. Writing or editing may become a separate tool later.
+Catalog has no editing controls, and its server refuses every write. Writing or editing may become a separate tool later.
 
 ## Connection snapshot
-Adapters return `project: {name, description}`, `story: {formatVersion: 1, startShotId, episodes: []}`, `characters: {items: []}`, `locations: {items: []}`, `ui: {mocks: [], colors: {}}`, `assets: {items: []}`, `pages: {items: []}`, `unmapped: {items: []}`, optional `catalogue: {sections: []}`. Episode objects have `id`, `title`, `chapters`; chapters have `id`, `title`, `scenes`; scenes have `id`, `title`, optional `story`, `characterIds`, `locationId`, and `shots`. Empty arrays are valid. Character/set items include `id`, `name`, `description`; character assets and set props are optional arrays of strings. Shot dialogue is an array of `{speakerId,text}`. Media is optional `{type,src}`. Return stable IDs from the host game. Missing files and malformed data must throw, rather than silently returning empty arrays.
+Adapters return `project: {name, description}`, optional `overview`, `plan` and `design`, `story: {formatVersion: 1, startShotId, episodes: []}`, `characters: {items: []}`, `locations: {items: []}`, `ui: {mocks: [], colors: {}}`, `assets: {items: []}`, `pages: {items: []}`, `unmapped: {items: []}`, optional `catalogue: {sections: []}`. Episode objects have `id`, `title`, `chapters`; chapters have `id`, `title`, `scenes`; scenes have `id`, `title`, optional `story`, `characterIds`, `locationId`, and `shots`. Empty arrays are valid. Character/set items include `id`, `name`, `description`; character assets and set props are optional arrays of strings. Shot dialogue is an array of `{speakerId,text}`. Media is optional `{type,src}`. Return stable IDs from the host game. Missing files and malformed data must throw, rather than silently returning empty arrays.
 
 ## Unmapped items
 Game data that does not fit this format must be reported, never dropped, guessed or forced into a nearby field. Adapters return `unmapped: {items: [{kind, source, item, reason}]}`. A `files` connection may instead provide optional `unmapped.json`, `assets.json`, `pages.json` and `catalogue.json` in dataDir with the same `items` shape. `source`, `item` and `reason` are required non-empty strings:
@@ -100,6 +122,6 @@ Game data that does not fit this format must be reported, never dropped, guessed
 
 Every game will have leftovers, and that is normal. Group them by kind of data rather than listing every field. The Unmapped page shows Missing assets (including any asset that fails to load), No home yet, Stays in the game, and Game pages. Its badge counts only missing assets and failed files.
 
-Describe items; do not copy their content into the report. Leftovers stay untouched in the game's files. `items: []` is a claim that everything mapped, so return it only after checking. Omit `unmapped` when no check has been done; Game Flow then shows “No report yet”. Malformed reports are connection errors. Game Flow displays this report but cannot verify that it is complete.
+Describe items; do not copy their content into the report. Leftovers stay untouched in the game's files. `items: []` is a claim that everything mapped, so return it only after checking. Omit `unmapped` when no check has been done; Catalog then shows “No report yet”. Malformed reports are connection errors. Catalog displays this report but cannot verify that it is complete.
 
-The installer should resolve differences in the host schema in its adapter. Optional source-sync information may be supplied as `syncStatus: {stale, sources: [{path,status}]}`. The installer must implement any required source hash checks in the adapter; Game Flow does not infer whether prose and game data agree.
+The installer should resolve differences in the host schema in its adapter. Optional source-sync information may be supplied as `syncStatus: {stale, sources: [{path,status}]}`. The installer must implement any required source hash checks in the adapter; Catalog does not infer whether prose and game data agree.

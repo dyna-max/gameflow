@@ -5,11 +5,11 @@ server: {
     '^/gf(/|$)': {
       target: 'http://127.0.0.1:8002',
       changeOrigin: true,
-      // Keeps Game Flow local even when the game's dev script uses --host. Returning false gives a 404.
+      // Keeps Catalog local even when the game's dev script uses --host. Returning false gives a 404.
       bypass: req => (['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) ? undefined : false)
     }
   }
 }
-Start Game Flow separately with PORT=8002 npm start from its folder.
+Start Catalog separately with PORT=8002 npm start from its folder.
 Visit the GAME dev server URL + /gf. Preserve /gf in the proxy path.
 Use a free port; 8002 is an example, not a requirement.

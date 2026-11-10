@@ -15,6 +15,12 @@ const TEXT_FILE = /\.(js|jsx|mjs|cjs|ts|tsx|json|md|txt|html|ya?ml|csv|vue|svelt
 const SETUP_FILE = /^(package\.json|(vite|next|nuxt|astro|svelte|webpack|remix)\.config\.[cm]?[jt]s)$/;
 const DETAIL_LABELS = ['Camera', 'Music', 'Ambience', 'Sound effect', 'Voice', 'Effect', 'Timing', 'Condition', 'Note'];
 const EXPORT_MARKER = 'gameflow-export.json';
+const FACT_LABELS = ['Type', 'Genre', 'Platform', 'Built with', 'Stage', 'Audience', 'Players', 'Session length', 'Controls', 'Made by'];
+const PLAN_STATUSES = ['done', 'in-progress', 'planned', 'blocked', 'unknown'];
+const WRITEUPS = { overview: 'Overview', plan: 'Plan and progress', design: 'Game design' };
+const list = value => (Array.isArray(value) ? value.filter(x => x && typeof x === 'object') : []);
+// Every block of the overview, plan and design, so labels and "From the game" claims can be checked.
+const writeupBlocks = data => Object.keys(WRITEUPS).flatMap(key => { const w = data[key]; if (!w) return []; const summary = typeof w.summary === 'string' ? { text: w.summary } : w.summary; return [summary, ...list(w.facts), ...list(w.sections)].filter(Boolean).map(block => ({ key, block })).concat(list(w.items).map(block => ({ key, block, item: true }))); });
 const SKIP = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.nuxt', 'out', 'coverage', '.cache', '.DS_Store', path.basename(KIT)]);
 
 const skipped = (rel, entry) => SKIP.has(entry.name) || (entry.name === 'gf' && fs.access(path.join(GAME, rel, 'gf', EXPORT_MARKER)).then(() => true, () => false));
@@ -74,14 +80,14 @@ async function checkRoutes(base) {
   if (!game) return fail(`Nothing is running at ${base}`, 'Start the game server, then check again.'), false;
   const gameHtml = await game.res.text();
   if (game.status !== 200) fail(`Game at / returned ${game.status}`);
-  else if (gameHtml.includes('Game not connected')) fail('/ shows the Game Flow placeholder, not the game', 'Use the URL of the game server.');
+  else if (gameHtml.includes('Game not connected')) fail('/ shows the Catalog placeholder, not the game', 'Use the URL of the game server.');
   else pass('Game loads at /');
   const admin = await get(base + '/gf').catch(() => null);
-  if (admin?.status === 200 && (await admin.res.text()).includes('Gameflow')) pass('Game Flow loads at /gf');
-  else return fail('Game Flow does not load at /gf', 'Start Game Flow and proxy the whole /gf prefix to its port.'), false;
+  if (admin?.status === 200 && (await admin.res.text()).includes('id="kitVersion"')) pass('Catalog loads at /gf');
+  else return fail('Catalog does not load at /gf', 'Start Catalog and proxy the whole /gf prefix to its port.'), false;
   for (const file of ['app.js', 'styles.css', 'brand.css']) {
     const r = await get(`${base}/gf/${file}`).catch(() => null);
-    r?.status === 200 ? pass('Game Flow file loads: ' + file) : fail('Game Flow file missing: ' + file, 'Proxy the whole /gf prefix and keep it in the path.');
+    r?.status === 200 ? pass('Catalog file loads: ' + file) : fail('Catalog file missing: ' + file, 'Proxy the whole /gf prefix and keep it in the path.');
   }
   return true;
 }
@@ -89,7 +95,7 @@ async function checkRoutes(base) {
 function checkData(data) {
   const state = data.connection?.state;
   if (state === 'connected') pass(`Connected: ${data.validation.shotCount} shots, ${data.characters.items.length} characters, ${data.locations.items.length} locations`);
-  else if (state === 'empty') pass('Connected, but the game has no shots yet');
+  else if (state === 'empty') pass('Connected, with no story mapped. That is fine for a game without one.');
   else fail(`Connection state is ${state}: ${data.connection?.message || 'no game data connected'}`, 'Correct the config, adapter or data named in that message.');
   for (const key of ['assets', 'pages', 'unmapped']) {
     if (data.reported?.[key]) pass(`${key} reported: ${data[key].items.length}`);
@@ -103,6 +109,17 @@ function checkData(data) {
   if (otherSections.length) console.log(`NOTE  Own catalogue sections: ${otherSections.join(', ')}. Use a standard section where one fits.`);
   const noPreview = (data.assets?.items || []).filter(a => a.type === 'code' || (a.type === '3d' && !/\.(glb|gltf)(\?|$)/i.test(a.src || '')));
   if (noPreview.length) console.log(`NOTE  ${noPreview.length} asset(s) with no preview: ${noPreview.slice(0, 12).map(a => a.name || a.id).join(', ')}. Add a live preview where it is easy; see examples/live-preview.txt.`);
+  if (data.catalogError) console.log(`NOTE  ${data.catalogError}. The Overview, Plan and Design pages show this error until it is fixed.`);
+  for (const [key, title] of Object.entries(WRITEUPS)) if (!data[key]) console.log(`NOTE  No ${title} yet. Write it in catalog.json; see AGENT_INSTRUCTIONS.md.`);
+  const blocks = writeupBlocks(data);
+  const noSource = blocks.filter(({ block }) => block.by === 'game' && !block.source);
+  if (noSource.length) console.log(`NOTE  ${noSource.length} block(s) marked "by": "game" have no source file. Add the file it came from.`);
+  const badStatus = list(data.plan?.items).filter(x => !PLAN_STATUSES.includes(x.status));
+  if (badStatus.length) console.log(`NOTE  ${badStatus.length} plan item(s) have no known status and show as Not clear: ${badStatus.slice(0, 8).map(x => x.title || x.id).join(', ')}. Use ${PLAN_STATUSES.join(', ')}.`);
+  const otherFacts = [...new Set(list(data.overview?.facts).map(f => f.label).filter(label => !FACT_LABELS.includes(label)))];
+  if (otherFacts.length) console.log(`NOTE  Overview facts not on the standard list: ${otherFacts.join(', ')}. Use ${FACT_LABELS.join(', ')} where they fit.`);
+  const otherDesign = list(data.design?.sections).map(x => x.id).filter(id => !data.standardDesign?.some(x => x.id === id));
+  if (otherDesign.length) console.log(`NOTE  Own design sections: ${otherDesign.join(', ')}. Use a standard one where it fits.`);
   if (data.evaluation?.error) console.log(`NOTE  ${data.evaluation.error}`);
   else if (!data.evaluation) console.log('NOTE  No review yet. Write evaluation.json; see AGENT_INSTRUCTIONS.md.');
   console.log(`INFO  Catalogue sections: ${data.catalogue?.sections?.length || 0}`);
@@ -123,8 +140,8 @@ async function checkPlatformFiles() {
     if (!body || crypto.createHash('sha256').update(body).digest('hex') !== sum) changed.push(file);
   }
   changed.length
-    ? fail(`Game Flow platform files changed: ${changed.join(', ')}. The platform is locked; only the mapping may change.`, 'Take the original files from the kit zip. If the platform needs a change, ask the Game Flow owner.')
-    : pass('Game Flow platform files are unchanged');
+    ? fail(`Catalog platform files changed: ${changed.join(', ')}. The platform is locked; only the mapping may change.`, 'Take the original files from the kit zip. If the platform needs a change, ask the Catalog owner.')
+    : pass('Catalog platform files are unchanged');
 }
 
 async function checkExactText(data) {
@@ -138,6 +155,11 @@ async function checkExactText(data) {
   if (!badStory.length) pass('All story text matches the game files exactly');
   else if (process.argv.includes('--text-from-outside')) console.log(`NOTE  ${badStory.length} story text item(s) not in the game files. Accepted because --text-from-outside was given.`);
   else fail(`${badStory.length} story text item(s) not found in the game files: ${sample(badStory)}`, 'Show the exact source text; never write or reword it. If the text is built by code or comes from a database or API, say so in the report and add --text-from-outside.');
+  // Text labelled "From the game" must really be in the game's files, or the label is false.
+  const claimed = writeupBlocks(data).filter(({ block }) => block.by === 'game').flatMap(({ block, item }) => [block.text, block.value, ...(item ? [block.title, block.note] : []), ...(Array.isArray(block.points) ? block.points : [])]).filter(v => typeof v === 'string' && v.trim());
+  const badClaims = notFound(claimed);
+  if (badClaims.length) fail(`${badClaims.length} write-up text item(s) marked "by": "game" are not in the game files: ${sample(badClaims)}`, 'Copy the exact text from the game, or mark it "by": "ai" so it shows as the AI\'s reading.');
+  else if (claimed.length) pass(`${claimed.length} write-up text item(s) marked From the game match the game files`);
   if (badLabels.length) console.log(`NOTE  ${badLabels.length} title or name(s) not found as written in the game files: ${sample(badLabels)}. Use the source text or the source ID.`);
 }
 
@@ -169,8 +191,8 @@ async function checkLocalOnly(base) {
     if (r?.status === 200 && r.type.includes('json')) open.push(address);
   }
   open.length
-    ? fail(`Game Flow can be opened from the network at ${open.join(', ')}`, 'Refuse non-local /gf requests in the proxy. See examples/vite-proxy.txt.')
-    : pass(addresses.length ? 'Game Flow is not reachable from the network' : 'Local-only: no network connection to test from');
+    ? fail(`Catalog can be opened from the network at ${open.join(', ')}`, 'Refuse non-local /gf requests in the proxy. See examples/vite-proxy.txt.')
+    : pass(addresses.length ? 'Catalog is not reachable from the network' : 'Local-only: no network connection to test from');
 }
 
 async function checkChanges() {
@@ -212,7 +234,7 @@ async function main() {
     const data = await (await fetch(base + '/gf/api/project')).json();
     const onDisk = JSON.parse(await fs.readFile(path.join(KIT, 'package.json'), 'utf8')).version;
     if (data.kitVersion === onDisk) pass(`Running kit version ${onDisk}`);
-    else fail(`The running Game Flow is version ${data.kitVersion || 'unknown (old)'}, but this folder has ${onDisk}`, 'An old process is still running. Stop it, then start Game Flow from this folder.');
+    else fail(`The running Catalog is version ${data.kitVersion || 'unknown (old)'}, but this folder has ${onDisk}`, 'An old process is still running. Stop it, then start Catalog from this folder.');
     checkData(data);
     await checkExactText(data);
     await checkUrls(base, 'assets', data.assets.items.filter(a => a.src).map(a => ({ name: a.id, url: a.src, html: a.type === 'live' })));
