@@ -92,11 +92,11 @@ Let assets populate themselves: build them from the game's own lists and folders
 List every asset, including sound and audition takes, and link them with `assetIds` on characters, locations and shots. Assets stay where they are: Catalog loads each one from `src` and shows whether it loaded in that browser. Never copy files into the toolkit. Use `scanAssets` from `scan-assets.mjs` so the list comes from the real folder on every read.
 
 ## Pages
-`pages: {items: [{id, name, kind, route, source, status}]}` lists every page in the game. `kind` is a label such as `game`, `story`, `mock` or `audition`. `route` is the browser path if it has one; `source` is the project-relative file; `status` is optional. Catalog shows the total and a count for each kind.
+`pages: {items: [{id, name, kind, route, source, status}]}` lists every page in the game. `kind` is a label such as `game`, `story`, `mock` or `audition`. `route` is the browser path if it has one; `source` is the project-relative file; `status` is optional. The Pages page lists them all as links, grouped by kind, so a reviewer can open any page in one click. Give every page a `route` where it has one.
 
 ## UI mock review
 
-`ui.json` is a review register, not a UI generator. `mocks[]` lists UI proposals the game already has. Each mock uses a stable `id`, `name`, `target`, optional `description`, optional `previewSrc` browser path, optional `generatedBy`, and `status` of `pending`, `accepted`, or `rejected`. Catalog displays status and never changes it. Mocks are also counted on the Unmapped page under Game pages.
+`ui.json` is a review register, not a UI generator. `mocks[]` lists UI proposals the game already has. Each mock uses a stable `id`, `name`, `target`, optional `description`, optional `previewSrc` browser path, optional `generatedBy`, and `status` of `pending`, `accepted`, or `rejected`. Catalog displays status and never changes it. Mocks are also listed on the Pages page.
 
 ## Story views
 
@@ -120,7 +120,7 @@ Game data that does not fit this format must be reported, never dropped, guessed
 - `item`: where it is in that file and what it is, such as `shop.items: 12 purchasable items`
 - `reason`: why it does not fit
 
-Every game will have leftovers, and that is normal. Group them by kind of data rather than listing every field. The Unmapped page shows Missing assets (including any asset that fails to load), No home yet, Stays in the game, and Game pages. Its badge counts only missing assets and failed files.
+Every game will have leftovers, and that is normal. Group them by kind of data rather than listing every field. The Unmapped page shows Missing assets (including any asset that fails to load), No home yet, and Stays in the game. Its badge counts only missing assets and failed files.
 
 Describe items; do not copy their content into the report. Leftovers stay untouched in the game's files. `items: []` is a claim that everything mapped, so return it only after checking. Omit `unmapped` when no check has been done; Catalog then shows “No report yet”. Malformed reports are connection errors. Catalog displays this report but cannot verify that it is complete.
 
